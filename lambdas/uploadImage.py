@@ -38,7 +38,7 @@ def lambda_handler(event, context):
     new_img.save(new_file_obj, "JPEG")
     new_file_obj.seek(0)
 
-    image_id = str(uuid.uuid1())
+    image_id = str(uuid.uuid4())
 
     client.upload_fileobj(new_file_obj, "zack-finers-image-bucket", "{img_id}.jpg".format(img_id=image_id))
 
