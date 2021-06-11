@@ -65,7 +65,7 @@ module "lambda_maker1" { // create get lambda
   source_file_path = "${path.module}/../lambdas/"
   lambda_name      = "getImage"
   lambda_role_arn  = aws_iam_role.img_lambda_role.arn
-  lambda_layers    = []
+  lambda_layers    = var.lambda_layers
   handler_name     = "lambda_handler"
   lambda_runtime   = "python3.8"
 }
@@ -76,7 +76,7 @@ module "lambda_maker2" { // create upload lambda
   source_file_path = "${path.module}/../lambdas/"
   lambda_name      = "uploadImage"
   lambda_role_arn  = aws_iam_role.img_lambda_role.arn
-  lambda_layers    = []
+  lambda_layers    = var.lambda_layers
   handler_name     = "lambda_handler"
   lambda_runtime   = "python3.8"
 }
