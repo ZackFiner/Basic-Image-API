@@ -16,3 +16,6 @@ variable "handler_name" {
 variable "lambda_runtime" {
   type = string
 }
+variable "s3_bucket_name" {
+  type = string
+}

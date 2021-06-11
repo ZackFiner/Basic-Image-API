@@ -4,6 +4,7 @@ import urllib.request as url
 import io
 import boto3
 import uuid
+from os import environ
 
 client = boto3.client('s3')
 
@@ -40,7 +41,7 @@ def lambda_handler(event, context):
 
     image_id = str(uuid.uuid4())
 
-    client.upload_fileobj(new_file_obj, "zack-finers-image-bucket", "{img_id}.jpg".format(img_id=image_id))
+    client.upload_fileobj(new_file_obj, environ["s3_bucket_name"], "{img_id}.jpg".format(img_id=image_id))
 
     return {
         'statusCode': 201,

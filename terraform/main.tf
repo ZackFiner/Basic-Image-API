@@ -6,6 +6,11 @@ data "aws_caller_identity" "current" {
 
 }
 
+resource "aws_s3_bucket" "sourcecode" {
+  bucket = "${var.bucket_name}-sourcecode"
+  acl = "private"
+}
+
 resource "aws_s3_bucket" "b" { // create an S3 bucket with the resource name 'b'
   bucket = var.bucket_name     // name the bucket zackfiners-tf-test-bucket in AWS
   acl    = "private"           // make it private
@@ -45,8 +50,8 @@ resource "aws_iam_policy" "img_lambda_iam_policy" {
 {
 	"Version": "2012-10-17",
 	"Statement": [{
-		"Action": "s3:*",
-		"Resource": "${aws_s3_bucket.b.arn}",
+		"Action": ["s3:*", "logs:*"],
+		"Resource": "*",
 		"Effect": "Allow",
 		"Sid": "zfdefaultlmbdpolicy"
 	}]
@@ -68,6 +73,7 @@ module "lambda_maker1" { // create get lambda
   lambda_layers    = var.lambda_layers
   handler_name     = "lambda_handler"
   lambda_runtime   = "python3.8"
+  s3_bucket_name   = var.bucket_name
 }
 
 module "lambda_maker2" { // create upload lambda
@@ -79,6 +85,7 @@ module "lambda_maker2" { // create upload lambda
   lambda_layers    = var.lambda_layers
   handler_name     = "lambda_handler"
   lambda_runtime   = "python3.8"
+  s3_bucket_name   = var.bucket_name
 }
 
 resource "aws_api_gateway_rest_api" "image_proc_api" {
