@@ -1,18 +1,18 @@
 variable "source_file_path" {
-  type=string
+  type = string
 }
 variable "lambda_name" {
-  type=string
+  type = string
 }
 variable "lambda_role_arn" {
-  type=string
+  type = string
 }
 variable "lambda_layers" {
-  type=list(string)
+  type = list(string)
 }
 variable "handler_name" {
-  type=string
+  type = string
 }
 variable "lambda_runtime" {
-    type=string
+  type = string
 }

@@ -3,13 +3,13 @@ provider "aws" { //
 
 }
 data "aws_caller_identity" "current" {
-  
+
 }
 
 resource "aws_s3_bucket" "b" { // create an S3 bucket with the resource name 'b'
-  bucket = "zackfiners-tf-test-bucket2" // name the bucket zackfiners-tf-test-bucket in AWS
-  acl    = "private" // make it private
-/*
+  bucket = var.bucket_name     // name the bucket zackfiners-tf-test-bucket in AWS
+  acl    = "private"           // make it private
+  /*
     // you can add tags here if you want
   tags = { 
     Name        = "Terraform Test Bucket"
@@ -40,8 +40,8 @@ EOF
 }
 
 resource "aws_iam_policy" "img_lambda_iam_policy" {
-    name = "default_lambda_policy"
-    policy = <<EOF
+  name   = "default_lambda_policy"
+  policy = <<EOF
 {
 	"Version": "2012-10-17",
 	"Statement": [{
@@ -55,47 +55,47 @@ EOF
 }
 
 resource "aws_iam_role_policy_attachment" "img_lambda_policy_attachment" {
-    role = aws_iam_role.img_lambda_role.name // we use role name here
-    policy_arn = aws_iam_policy.img_lambda_iam_policy.arn
+  role       = aws_iam_role.img_lambda_role.name // we use role name here
+  policy_arn = aws_iam_policy.img_lambda_iam_policy.arn
 }
 
 module "lambda_maker1" { // create get lambda
-  source="./lambda_component"
+  source = "./lambda_component"
 
   source_file_path = "${path.module}/../lambdas/"
-  lambda_name = "getImage"
-  lambda_role_arn = aws_iam_role.img_lambda_role.arn
-  lambda_layers = ["arn:aws:lambda:us-west-1:202559052178:layer:imageProcessingLayer:4"]
-  handler_name = "lambda_handler"
-  lambda_runtime = "python3.8"
+  lambda_name      = "getImage"
+  lambda_role_arn  = aws_iam_role.img_lambda_role.arn
+  lambda_layers    = var.lambda_layers
+  handler_name     = "lambda_handler"
+  lambda_runtime   = "python3.8"
 }
 
 module "lambda_maker2" { // create upload lambda
-  source="./lambda_component"
+  source = "./lambda_component"
 
   source_file_path = "${path.module}/../lambdas/"
-  lambda_name = "uploadImage"
-  lambda_role_arn = aws_iam_role.img_lambda_role.arn
-  lambda_layers = ["arn:aws:lambda:us-west-1:202559052178:layer:imageProcessingLayer:4"]
-  handler_name = "lambda_handler"
-  lambda_runtime = "python3.8"
+  lambda_name      = "uploadImage"
+  lambda_role_arn  = aws_iam_role.img_lambda_role.arn
+  lambda_layers    = var.lambda_layers
+  handler_name     = "lambda_handler"
+  lambda_runtime   = "python3.8"
 }
 
 resource "aws_api_gateway_rest_api" "image_proc_api" {
-    name="imageProcTF"
+  name = "imageProcTF"
 }
 
 resource "aws_api_gateway_resource" "img_id" {
-  parent_id = aws_api_gateway_rest_api.image_proc_api.root_resource_id
-  path_part = "{image_id}"
+  parent_id   = aws_api_gateway_rest_api.image_proc_api.root_resource_id
+  path_part   = "{image_id}"
   rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
 }
 
 resource "aws_api_gateway_method" "getImage_meth" {
   authorization = "NONE"
-  http_method = "GET"
-  resource_id = aws_api_gateway_resource.img_id.id
-  rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
+  http_method   = "GET"
+  resource_id   = aws_api_gateway_resource.img_id.id
+  rest_api_id   = aws_api_gateway_rest_api.image_proc_api.id
 }
 
 resource "aws_api_gateway_integration" "getImage_int" {
@@ -103,16 +103,16 @@ resource "aws_api_gateway_integration" "getImage_int" {
   resource_id = aws_api_gateway_resource.img_id.id
   rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
 
-  integration_http_method = "GET"
-  type="AWS_PROXY"
-  uri = module.lambda_maker1.lambda_uri
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = module.lambda_maker1.lambda_uri
 }
 
 resource "aws_api_gateway_method" "uploadImage_meth" {
   authorization = "NONE"
-  http_method = "POST"
-  rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
-  resource_id = aws_api_gateway_rest_api.image_proc_api.root_resource_id
+  http_method   = "POST"
+  rest_api_id   = aws_api_gateway_rest_api.image_proc_api.id
+  resource_id   = aws_api_gateway_rest_api.image_proc_api.root_resource_id
 }
 
 
@@ -122,14 +122,14 @@ resource "aws_api_gateway_integration" "uploadImage_int" {
   rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
 
   integration_http_method = "POST"
-  type="AWS_PROXY"
-  uri = module.lambda_maker2.lambda_uri
+  type                    = "AWS_PROXY"
+  uri                     = module.lambda_maker2.lambda_uri
 }
 
 resource "aws_lambda_permission" "imgproc_lambda_get" {
-  statement_id = "AllowExecutionFromAPIGateway"
-  action = "lambda:InvokeFunction"
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
   function_name = module.lambda_maker1.lambda_function_name
-  principal = "apigateway.amazonaws.com"
-  source_arn = "arn:aws:execute-api:us-west-1:${data.aws_caller_identity.current.account_id}:${aws_api_gateway_rest_api.image_proc_api.id}/*/${aws_api_gateway_method.getImage_meth.http_method}${aws_api_gateway_resource.img_id.path}"
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.image_proc_api.execution_arn}/*/*/*"
 }
