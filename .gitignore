@@ -6,3 +6,4 @@ venv/*
 *.backup
 *.exe
 *.hcl
+terraform/.terraform/modules/modules.json

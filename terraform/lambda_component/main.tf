@@ -6,8 +6,8 @@ data "archive_file" "lambda_payload" {
 }
 
 resource "aws_lambda_function" "lambda" { // create a aws lambda function with the terraform handle test_lambda
-  filename      = "${var.lambda_name}.zip"// select the zip file containing the code that implements the lambda that we created above
-  function_name = var.lambda_name // the name of actual lambda on AWS
+  filename      = "${path.module}/${var.lambda_name}.zip"// select the zip file containing the code that implements the lambda that we created above
+  function_name = "${var.lambda_name}-tf" // the name of actual lambda on AWS
   role          = var.lambda_role_arn // select a role for the lambda
   handler       = "${var.lambda_name}.${var.handler_name}" // choose a handler name, this is the name of the file/function in payload.zip that serves as the entry point
 
@@ -25,4 +25,11 @@ resource "aws_lambda_function" "lambda" { // create a aws lambda function with t
       foo = "bar"
     }
   }*/
+}
+
+output "lambda_uri" {
+  value=aws_lambda_function.lambda.invoke_arn
+}
+output "lambda_function_name" {
+    value = aws_lambda_function.lambda.function_name
 }
