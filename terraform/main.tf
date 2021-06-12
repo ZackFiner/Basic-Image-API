@@ -134,7 +134,14 @@ resource "aws_api_gateway_method" "uploadImage_meth" {
   resource_id   = aws_api_gateway_rest_api.image_proc_api.root_resource_id
 }
 
+resource "aws_api_gateway_method_response" "uploadImage_resp_meth" {
+  http_method = aws_api_gateway_method.uploadImage_meth.http_method
+  resource_id = aws_api_gateway_rest_api.image_proc_api.root_resource_id
+  rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
+  status_code = "200"
 
+  response_models = {"application/json" = "Empty"}
+}
 
 resource "aws_api_gateway_integration" "uploadImage_int" {
   http_method = aws_api_gateway_method.uploadImage_meth.http_method
@@ -145,6 +152,15 @@ resource "aws_api_gateway_integration" "uploadImage_int" {
   type                    = "AWS_PROXY"
   uri                     = module.uploadImage_module.lambda_uri
 }
+
+resource "aws_api_gateway_integration_response" "uploadImage_resp_int" {
+  http_method = aws_api_gateway_method.uploadImage_meth.http_method
+  resource_id = aws_api_gateway_rest_api.image_proc_api.root_resource_id
+  rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
+  status_code = aws_api_gateway_method_response.uploadImage_resp_meth.status_code
+}
+
+
 
 resource "aws_lambda_permission" "imgproc_lambda_get" {
   statement_id  = "AllowExecutionFromAPIGateway"
@@ -160,4 +176,26 @@ resource "aws_lambda_permission" "imgproc_lambda_post" {
   function_name = module.uploadImage_module.lambda_function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.image_proc_api.execution_arn}/*/*/*"
+}
+
+
+// Deploy the API
+
+resource "aws_api_gateway_deployment" "img_lib_dep" {
+  rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
+
+  triggers = {
+     # redeploy if our api gateway definition changes, use a hash sha1 to check this
+    redeplyoment = sha1(jsonencode(aws_api_gateway_rest_api.image_proc_api.body))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_api_gateway_stage" "img_lib_stg" {
+        deployment_id = aws_api_gateway_deployment.img_lib_dep.id
+        rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
+        stage_name = "images"
 }
