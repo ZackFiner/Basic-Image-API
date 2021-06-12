@@ -64,7 +64,7 @@ resource "aws_iam_role_policy_attachment" "img_lambda_policy_attachment" {
   policy_arn = aws_iam_policy.img_lambda_iam_policy.arn
 }
 
-module "lambda_maker1" { // create get lambda
+module "getImage_module" { // create get lambda
   source = "./lambda_component"
 
   source_file_path = "${path.module}/../lambdas/"
@@ -76,7 +76,7 @@ module "lambda_maker1" { // create get lambda
   s3_bucket_name   = var.bucket_name
 }
 
-module "lambda_maker2" { // create upload lambda
+module "uploadImage_module" { // create upload lambda
   source = "./lambda_component"
 
   source_file_path = "${path.module}/../lambdas/"
@@ -105,6 +105,15 @@ resource "aws_api_gateway_method" "getImage_meth" {
   rest_api_id   = aws_api_gateway_rest_api.image_proc_api.id
 }
 
+resource "aws_api_gateway_method_response" "getImage_resp_meth" {
+  http_method = aws_api_gateway_method.getImage_meth.http_method
+  resource_id = aws_api_gateway_resource.img_id.id
+  rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
+  status_code = "200"
+
+  response_models = {"application/json" = "Empty"}
+}
+
 resource "aws_api_gateway_integration" "getImage_int" {
   http_method = aws_api_gateway_method.getImage_meth.http_method
   resource_id = aws_api_gateway_resource.img_id.id
@@ -112,7 +121,14 @@ resource "aws_api_gateway_integration" "getImage_int" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = module.lambda_maker1.lambda_uri
+  uri                     = module.getImage_module.lambda_uri
+}
+
+resource "aws_api_gateway_integration_response" "getImage_resp_int" {
+  http_method = aws_api_gateway_method.getImage_meth.http_method
+  resource_id = aws_api_gateway_resource.img_id.id
+  rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
+  status_code = aws_api_gateway_method_response.getImage_resp_meth.status_code
 }
 
 resource "aws_api_gateway_method" "uploadImage_meth" {
@@ -123,6 +139,7 @@ resource "aws_api_gateway_method" "uploadImage_meth" {
 }
 
 
+
 resource "aws_api_gateway_integration" "uploadImage_int" {
   http_method = aws_api_gateway_method.uploadImage_meth.http_method
   resource_id = aws_api_gateway_rest_api.image_proc_api.root_resource_id
@@ -130,13 +147,21 @@ resource "aws_api_gateway_integration" "uploadImage_int" {
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = module.lambda_maker2.lambda_uri
+  uri                     = module.uploadImage_module.lambda_uri
 }
 
 resource "aws_lambda_permission" "imgproc_lambda_get" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = module.lambda_maker1.lambda_function_name
+  function_name = module.getImage_module.lambda_function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.image_proc_api.execution_arn}/*/*/*"
+}
+
+resource "aws_lambda_permission" "imgproc_lambda_post" {
+  statement_id  = "AllowExecutionFromAPIGateway"
+  action        = "lambda:InvokeFunction"
+  function_name = module.uploadImage_module.lambda_function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.image_proc_api.execution_arn}/*/*/*"
 }

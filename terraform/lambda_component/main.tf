@@ -24,8 +24,19 @@ resource "aws_lambda_function" "lambda" { // create a aws lambda function with t
 
   # The filebase64sha256() function is available in Terraform 0.11.12 and later
   # For Terraform 0.11.11 and earlier, use the base64sha256() function and the file() function:
-  # source_code_hash = "${base64sha256(file("lambda_function_payload.zip"))}"
-  #source_code_hash = filebase64sha256("lambda_function_payload.zip")
+
+
+  // NOTE: apply has two steps, a plan step and an execution step.
+  // the plan step involves determining all the changes which need to be made to the statefile
+  // (which contains the current state of your infrastructure)
+  // the execution step then involves making the changes to your infrastructure via API calls, and then updating
+  // the state file to reflect the changes you have made.
+
+  // you need to do this and not filemd5(), during the planstep all of the terraform code is executed at once (or in a
+  // random order). This means that there is no garantee that the archive_file data might not be created before this
+  // filemd5() call is done in this resource. As such, filemd5 will fail to locate the file and error out during the
+  // planstep.
+  source_code_hash = data.archive_file.lambda_payload.output_base64sha256
 
   runtime = var.lambda_runtime
   layers = var.lambda_layers

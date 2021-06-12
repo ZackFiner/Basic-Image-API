@@ -41,7 +41,7 @@ def lambda_handler(event, context):
 
     image_id = str(uuid.uuid4())
 
-    client.upload_fileobj(new_file_obj, environ["s3_bucket_name"], "{img_id}.jpg".format(img_id=image_id))
+    client.upload_fileobj(new_file_obj, environ["s3_bucket"], "{img_id}.jpg".format(img_id=image_id))
 
     return {
         'statusCode': 201,
