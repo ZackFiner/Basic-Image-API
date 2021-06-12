@@ -6,11 +6,6 @@ data "aws_caller_identity" "current" {
 
 }
 
-resource "aws_s3_bucket" "sourcecode" {
-  bucket = "${var.bucket_name}-sourcecode"
-  acl = "private"
-}
-
 resource "aws_s3_bucket" "b" { // create an S3 bucket with the resource name 'b'
   bucket = var.bucket_name     // name the bucket zackfiners-tf-test-bucket in AWS
   acl    = "private"           // make it private
