@@ -86,6 +86,8 @@ module "uploadImage_module" { // create upload lambda
 resource "aws_api_gateway_rest_api" "image_proc_api" {
   name               = "imageProcTF"
   binary_media_types = ["*/*"]
+
+  description = "Image Processing API applied from terraform on ${timestamp()}" // this forces a redeployment
 }
 
 resource "aws_api_gateway_resource" "images" {
@@ -187,11 +189,12 @@ resource "aws_lambda_permission" "imgproc_lambda_post" {
 
 // Deploy the API
 
-resource "aws_api_gateway_deployment" "img_lib_dep" {
+resource "aws_api_gateway_deployment" "deployment" {
   rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
 
   triggers = {
-     # redeploy if our api gateway definition changes, use a hash sha1 to check this
+     # redeploy if our api gateway definition of the api_gateway resource changes, not necessarily any of the
+     # other resources the api gateway is dependent on do.
     redeplyoment = sha1(jsonencode(aws_api_gateway_rest_api.image_proc_api.body))
   }
 
@@ -201,7 +204,9 @@ resource "aws_api_gateway_deployment" "img_lib_dep" {
 }
 
 resource "aws_api_gateway_stage" "img_lib_stg" {
-        deployment_id = aws_api_gateway_deployment.img_lib_dep.id
+        deployment_id = aws_api_gateway_deployment.deployment.id
         rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
         stage_name = "api"
+
+        description = "Deployed at ${timestamp()}"
 }
