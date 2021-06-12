@@ -84,7 +84,8 @@ module "lambda_maker2" { // create upload lambda
 }
 
 resource "aws_api_gateway_rest_api" "image_proc_api" {
-  name = "imageProcTF"
+  name               = "imageProcTF"
+  binary_media_types = ["*/*"]
 }
 
 resource "aws_api_gateway_resource" "img_id" {
