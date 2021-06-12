@@ -88,8 +88,14 @@ resource "aws_api_gateway_rest_api" "image_proc_api" {
   binary_media_types = ["*/*"]
 }
 
-resource "aws_api_gateway_resource" "img_id" {
+resource "aws_api_gateway_resource" "images" {
   parent_id   = aws_api_gateway_rest_api.image_proc_api.root_resource_id
+  path_part = "images"
+  rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
+}
+
+resource "aws_api_gateway_resource" "img_id" {
+  parent_id   = aws_api_gateway_resource.images.id
   path_part   = "{image_id}"
   rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
 }
@@ -131,12 +137,12 @@ resource "aws_api_gateway_method" "uploadImage_meth" {
   authorization = "NONE"
   http_method   = "POST"
   rest_api_id   = aws_api_gateway_rest_api.image_proc_api.id
-  resource_id   = aws_api_gateway_rest_api.image_proc_api.root_resource_id
+  resource_id   = aws_api_gateway_resource.images.id
 }
 
 resource "aws_api_gateway_method_response" "uploadImage_resp_meth" {
   http_method = aws_api_gateway_method.uploadImage_meth.http_method
-  resource_id = aws_api_gateway_rest_api.image_proc_api.root_resource_id
+  resource_id = aws_api_gateway_resource.images.id
   rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
   status_code = "200"
 
@@ -145,7 +151,7 @@ resource "aws_api_gateway_method_response" "uploadImage_resp_meth" {
 
 resource "aws_api_gateway_integration" "uploadImage_int" {
   http_method = aws_api_gateway_method.uploadImage_meth.http_method
-  resource_id = aws_api_gateway_rest_api.image_proc_api.root_resource_id
+  resource_id = aws_api_gateway_resource.images.id
   rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
 
   integration_http_method = "POST"
@@ -155,7 +161,7 @@ resource "aws_api_gateway_integration" "uploadImage_int" {
 
 resource "aws_api_gateway_integration_response" "uploadImage_resp_int" {
   http_method = aws_api_gateway_method.uploadImage_meth.http_method
-  resource_id = aws_api_gateway_rest_api.image_proc_api.root_resource_id
+  resource_id = aws_api_gateway_resource.images.id
   rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
   status_code = aws_api_gateway_method_response.uploadImage_resp_meth.status_code
 }
@@ -197,5 +203,5 @@ resource "aws_api_gateway_deployment" "img_lib_dep" {
 resource "aws_api_gateway_stage" "img_lib_stg" {
         deployment_id = aws_api_gateway_deployment.img_lib_dep.id
         rest_api_id = aws_api_gateway_rest_api.image_proc_api.id
-        stage_name = "images"
+        stage_name = "api"
 }
